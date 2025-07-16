@@ -2,17 +2,12 @@
 //#include "stm32f1xx_hal.h"
 //#include <stdbool.h>
 //
-//#define NUM_SENSORS 7   // сначала происходит измерение 8-го сенсора, который уже подключён к PA8 TIM1-CH1
-//// эту переменную сделать 0, если мы работаем с одним датчиком
+//#define NUMBER_OF_SENSORS 1 //Поставить 1, и будет фиксироваться только датчик на пине PA8
 //
-//extern volatile uint8_t current_sensor;
-//extern volatile bool is_first_sensor;
 //
-//typedef struct {
-//    GPIO_TypeDef* port;
-//    uint16_t pin;
-//    uint32_t measurement;
-//} SensorConfig;
+//extern const uint32_t IC_Channels[]; // только объявляем
 //
-//void switchToSensor();
-//void handleMeasurements();
+//void IC_Start();
+//void IC_Stop();
+//
+//void outputTheResult();

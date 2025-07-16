@@ -10,4 +10,4 @@ stm32f1xx_it.c:192:6:SysTick_Handler	8	static
 stm32f1xx_it.c:213:6:EXTI1_IRQHandler	8	static
 stm32f1xx_it.c:226:6:TIM1_UP_IRQHandler	80	static
 stm32f1xx_it.c:248:6:TIM1_CC_IRQHandler	88	static
-stm32f1xx_it.c:294:6:HAL_GPIO_EXTI_Callback	48	static
+stm32f1xx_it.c:294:6:HAL_GPIO_EXTI_Callback	16	static

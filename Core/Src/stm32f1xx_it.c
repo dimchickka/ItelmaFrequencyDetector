@@ -236,7 +236,7 @@ void TIM1_UP_IRQHandler(void)
 	}
 
   /* USER CODE END TIM1_UP_IRQn 0 */
-  //HAL_TIM_IRQHandler(&htim1);
+  HAL_TIM_IRQHandler(&htim1);
   /* USER CODE BEGIN TIM1_UP_IRQn 1 */
 
   /* USER CODE END TIM1_UP_IRQn 1 */
@@ -257,7 +257,7 @@ void TIM1_CC_IRQHandler(void)
 		return;
 		}
 
-	if(capture_count < 11){
+	if(capture_count < 101){
 		uint32_t now = HAL_TIM_ReadCapturedValue(&htim1, TIM_CHANNEL_1);
 		total_frequency += (72000000) / (72 * (now + 65536 * numberOfOverflow));
 		__HAL_TIM_SET_COUNTER(&htim1, 0); // обнуляем таймер
@@ -272,7 +272,7 @@ void TIM1_CC_IRQHandler(void)
 		uint32_t frequency_average = total_frequency/capture_count;
 		// Передаём частоту в UART
 		char msg[64];
-		int len = snprintf(msg, sizeof(msg), "10 Fronts detected!, Freq: %lu Hz\r\n", frequency_average);
+		int len = snprintf(msg, sizeof(msg), "%lu\r\n", frequency_average);
 		HAL_UART_Transmit(&huart2, (uint8_t*)msg, len, HAL_MAX_DELAY);
 
 		numberOfOverflow = 0; // сбрасываем после захвата
@@ -284,7 +284,7 @@ void TIM1_CC_IRQHandler(void)
 }
 	    }
   /* USER CODE END TIM1_CC_IRQn 0 */
-  //HAL_TIM_IRQHandler(&htim1);
+  HAL_TIM_IRQHandler(&htim1);
   /* USER CODE BEGIN TIM1_CC_IRQn 1 */
 
   /* USER CODE END TIM1_CC_IRQn 1 */
@@ -299,8 +299,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_1);   // Включить захват
     HAL_TIM_Base_Start_IT(&htim1);                // Включить переполнение
 
-    char msg[] = "Button is pressed\r\n";
-    HAL_UART_Transmit(&huart2, (uint8_t*)msg, sizeof(msg) - 1, HAL_MAX_DELAY);
+    //char msg[] = "Button is pressed\r\n";
+    //HAL_UART_Transmit(&huart2, (uint8_t*)msg, sizeof(msg) - 1, HAL_MAX_DELAY);
   }
 }
 
