@@ -60,6 +60,9 @@ volatile bool isFirstImpulse = true;
 uint32_t capture_count = 0;
 uint32_t total_frequency = 0;
 bool isProcess = false;
+#define MAX_SAMPLES 101
+
+uint32_t frequencies[MAX_SAMPLES];
 
 /* USER CODE END 0 */
 
@@ -230,13 +233,13 @@ void TIM1_UP_IRQHandler(void)
 	if (__HAL_TIM_GET_FLAG(&htim1, TIM_FLAG_UPDATE)){
 		__HAL_TIM_CLEAR_IT(&htim1, TIM_IT_UPDATE); //сброс флага
 	  numberOfOverflow++;        // Увеличиваем счётчик
-	  char msg[64];
-	  int len = snprintf(msg, sizeof(msg), "Overflowed, %lu\r\n", numberOfOverflow);
-	  HAL_UART_Transmit(&huart2, (uint8_t*)msg, len, HAL_MAX_DELAY);
+	  //char msg[64];
+	  //int len = snprintf(msg, sizeof(msg), "Overflowed, %lu\r\n", numberOfOverflow);
+	 // HAL_UART_Transmit(&huart2, (uint8_t*)msg, len, HAL_MAX_DELAY);
 	}
 
   /* USER CODE END TIM1_UP_IRQn 0 */
-  HAL_TIM_IRQHandler(&htim1);
+  //HAL_TIM_IRQHandler(&htim1);
   /* USER CODE BEGIN TIM1_UP_IRQn 1 */
 
   /* USER CODE END TIM1_UP_IRQn 1 */
@@ -254,41 +257,54 @@ void TIM1_CC_IRQHandler(void)
 					if (isFirstImpulse) {
 						isFirstImpulse = false;
 					   __HAL_TIM_SET_COUNTER(&htim1, 0); // обнуляем таймер
-		return;
+					   return;
+					}
+
+					if(capture_count < MAX_SAMPLES){
+					    uint32_t now = HAL_TIM_ReadCapturedValue(&htim1, TIM_CHANNEL_1);
+					    frequencies[capture_count] = (72000000) / (1 * (now + 65536 * numberOfOverflow));
+
+					    __HAL_TIM_SET_COUNTER(&htim1, 0); // обнуляем таймер
+					    numberOfOverflow = 0;             // сбрасываем после захвата
+					    capture_count++;
+					}
+					else {
+					    HAL_TIM_IC_Stop_IT(&htim1, TIM_CHANNEL_1);    // Остановить Input Capture + прерывание
+					    HAL_TIM_Base_Stop_IT(&htim1);                 // Остановить переполнение + прерывание
+					    __HAL_TIM_SET_COUNTER(&htim1, 0);             // обнуляем таймер
+
+					    // Сортировка массива (сортировка вставками для маленького массива)
+					    for (int i = 1; i < MAX_SAMPLES; i++) {
+					        uint32_t key = frequencies[i];
+					        int j = i - 1;
+					        while (j >= 0 && frequencies[j] > key) {
+					            frequencies[j + 1] = frequencies[j];
+					            j--;
+					        }
+					        frequencies[j + 1] = key;
+					    }
+
+					    // Медиана (середина отсортированного массива)
+					    uint32_t frequency_median = frequencies[MAX_SAMPLES / 2];
+
+					    // Передаём медианную частоту в UART
+					    char msg[64];
+					    int len = snprintf(msg, sizeof(msg), "%lu\r\n", frequency_median);
+					    HAL_UART_Transmit(&huart2, (uint8_t*)msg, len, HAL_MAX_DELAY);
+
+					    // Сброс состояния
+					    numberOfOverflow = 0;
+					    capture_count = 0;
+					    isProcess = false;
+					}
 		}
-
-	if(capture_count < 101){
-		uint32_t now = HAL_TIM_ReadCapturedValue(&htim1, TIM_CHANNEL_1);
-		total_frequency += (72000000) / (72 * (now + 65536 * numberOfOverflow));
-		__HAL_TIM_SET_COUNTER(&htim1, 0); // обнуляем таймер
-		numberOfOverflow = 0; // сбрасываем после захвата
-		capture_count++;
-	}
-	else{
-		HAL_TIM_IC_Stop_IT(&htim1, TIM_CHANNEL_1);    // Остановить Input Capture + прерывание
-		HAL_TIM_Base_Stop_IT(&htim1);                 // Остановить переполнение + прерывание
-		__HAL_TIM_SET_COUNTER(&htim1, 0); // обнуляем таймер
-
-		uint32_t frequency_average = total_frequency/capture_count;
-		// Передаём частоту в UART
-		char msg[64];
-		int len = snprintf(msg, sizeof(msg), "%lu\r\n", frequency_average);
-		HAL_UART_Transmit(&huart2, (uint8_t*)msg, len, HAL_MAX_DELAY);
-
-		numberOfOverflow = 0; // сбрасываем после захвата
-		total_frequency = 0;
-		capture_count = 0;
-		isProcess = false;
-		//current_sensor++;
-		//handleMeasurements();
 }
-	    }
+
   /* USER CODE END TIM1_CC_IRQn 0 */
-  HAL_TIM_IRQHandler(&htim1);
+  //HAL_TIM_IRQHandler(&htim1);
   /* USER CODE BEGIN TIM1_CC_IRQn 1 */
 
   /* USER CODE END TIM1_CC_IRQn 1 */
-}
 
 /* USER CODE BEGIN 1 */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
@@ -303,7 +319,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     //HAL_UART_Transmit(&huart2, (uint8_t*)msg, sizeof(msg) - 1, HAL_MAX_DELAY);
   }
 }
-
 
 //void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 //{
